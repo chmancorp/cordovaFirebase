@@ -18,13 +18,17 @@ import android.graphics.Color;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Map;
 import java.util.Random;
 
 public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "FirebasePlugin";
-
+    private SharedPreferences prefs;
     /**
      * Get a string from resources without importing the .R package
      *
@@ -95,6 +99,43 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             int n = rand.nextInt(50) + 1;
             id = Integer.toString(n);
         }
+
+        if(data != null){
+            SharedPreferences.Editor editor = prefs.edit();
+            String mcsJsonString = prefs.getString(Constants.SharedPrefs.MCS,null);
+            try{
+              JSONArray mcs = (mcsJsonString != null) ? new JSONArray(mcsJsonString): new JSONArray();
+              if(data.containsKey("payreq")){
+                //Notificación del mensaje de cobro
+                JSONObject mcPayReq = new JSONObject(data.get("payreq"));
+                JSONObject mc = (mcPayReq.has("infoCif")) ? mcPayReq.getJSONObject("infoCif")
+                  : null;
+                boolean previusPayReqSaved = false;
+                if(mc != null){
+                  for(int i = 0;i < mcs.length(); i++){
+                      if(mcs.getJSONObject(i).getString("id").equals(mc.getString("id"))){
+                        previusPayReqSaved = true;
+                        break;
+                      }
+                  }
+                }
+    
+                if(!previusPayReqSaved){
+                    mcs.put(mc);
+                  Log.d(TAG,mcs.toString());
+                  editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
+                  editor.apply();
+                }else{
+                  Log.d(TAG,"Previamente salvado: " + mcs.toString());
+                }
+              }else if(data.containsKey("info")) {
+                //Estatus del mensaje de cobro
+              }
+            }catch (JSONException ex){
+    
+            }
+    
+          }
 
         Log.d(TAG, "From: " + remoteMessage.getFrom());
         Log.d(TAG, "Notification Message id: " + id);

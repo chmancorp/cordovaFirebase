@@ -24,6 +24,10 @@ exports.onNotificationOpen = function (success, error) {
   exec(success, error, "FirebasePlugin", "onNotificationOpen", []);
 };
 
+exports.getMCSaved = function (success, error) {
+  exec(success, error, "FirebasePlugin", "getMCSaved", []);
+};
+
 exports.onTokenRefresh = function (success, error) {
   exec(success, error, "FirebasePlugin", "onTokenRefresh", []);
 };

@@ -146,6 +146,9 @@ public class FirebasePlugin extends CordovaPlugin {
         } else if (action.equals("onNotificationOpen")) {
             this.onNotificationOpen(callbackContext);
             return true;
+        } else if (action.equals("getMCSaved")) {
+            this.getMCSaved(callbackContext);
+            return true;
         } else if (action.equals("onTokenRefresh")) {
             this.onTokenRefresh(callbackContext);
             return true;
@@ -263,6 +266,23 @@ public class FirebasePlugin extends CordovaPlugin {
             }
             FirebasePlugin.notificationStack.clear();
         }
+    }
+
+    private void getMCSaved(final CallbackContext callbackContext) {
+        SharedPreferences pref = this.cordova.getActivity().getApplicationContext().
+          getSharedPreferences(Constants.SharedPrefs.Notifications,Context.MODE_PRIVATE);
+        String mcJsonString = pref.getString(Constants.SharedPrefs.MCS,null);
+        try {
+          callbackContext.success(new JSONArray(mcJsonString));
+        }catch (Exception ex){
+          callbackContext.error("Hubo un error al querer obtener los mensajes de cobro");
+        }
+        /*if (FirebasePlugin.notificationStack != null) {
+            for (Bundle bundle : FirebasePlugin.notificationStack) {
+                FirebasePlugin.sendNotification(bundle, this.cordova.getActivity().getApplicationContext());
+            }
+            FirebasePlugin.notificationStack.clear();
+        }*/
     }
 
     private void onTokenRefresh(final CallbackContext callbackContext) {
