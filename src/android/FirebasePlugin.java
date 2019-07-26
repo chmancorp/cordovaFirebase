@@ -273,7 +273,12 @@ public class FirebasePlugin extends CordovaPlugin {
           getSharedPreferences(Constants.SharedPrefs.Notifications,Context.MODE_PRIVATE);
         String mcJsonString = pref.getString(Constants.SharedPrefs.MCS,null);
         try {
-          callbackContext.success(new JSONArray(mcJsonString));
+          if(mcJsonString != null){
+            callbackContext.success(new JSONArray(mcJsonString));
+          }else{
+            callbackContext.success(new JSONArray());
+          }
+
         }catch (Exception ex){
           callbackContext.error("Hubo un error al querer obtener los mensajes de cobro");
         }
