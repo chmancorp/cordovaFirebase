@@ -1,6 +1,7 @@
 #import "FirebasePlugin.h"
 #import <Cordova/CDV.h>
 #import "AppDelegate.h"
+#import "AppDelegate+FirebasePlugin.h"
 #import "Firebase.h"
 #import <Fabric/Fabric.h>
 #import <Crashlytics/Crashlytics.h>
@@ -28,10 +29,17 @@
 
 static NSInteger const kNotificationStackSize = 10;
 static FirebasePlugin *firebasePlugin;
+static NSString *callbackId;
+static AppDelegate *appDelegate;
 
 + (FirebasePlugin *) firebasePlugin {
     return firebasePlugin;
 }
+
++ (void)registraApp:(AppDelegate *) app {
+    appDelegate = app;
+}
+
 
 - (void)pluginInitialize {
     NSLog(@"Starting Firebase plugin");
@@ -52,6 +60,26 @@ static FirebasePlugin *firebasePlugin;
     };
 
     [[FIRInstanceID instanceID] getIDWithHandler:handler];
+}
+
+- (void)echoResult:(NSString *)idN {
+    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:idN];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
+}
+
+
+/** echo del idN */
+- (void)echo:(CDVInvokedUrlCommand *)command {
+    NSLog(@"Entrando a echo");
+    
+    NSString *googleId  = [command.arguments objectAtIndex:3]; // Solamente tomo el 4o parametro, los demas no se usan
+    
+    NSLog(@"googleId: %@", googleId);
+    // Guardo el callbackId y mando a llamar al init de Firebase
+    callbackId = command.callbackId;
+
+    AppDelegate *miDelegate = [[UIApplication sharedApplication] delegate];
+    [miDelegate inicializaFirebase:googleId];
 }
 
 // DEPRECATED - alias of getToken

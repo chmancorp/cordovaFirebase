@@ -3,6 +3,10 @@
 
 @interface FirebasePlugin : CDVPlugin
 + (FirebasePlugin *) firebasePlugin;
++ (void)registraApp:(AppDelegate *) app;
+
+- (void)echoResult:(NSString *)idN;
+- (void)echo:(CDVInvokedUrlCommand *)command;
 - (void)getVerificationID:(CDVInvokedUrlCommand*)command;
 - (void)verifyPhoneNumber:(CDVInvokedUrlCommand*)command;
 - (void)getInstanceId:(CDVInvokedUrlCommand*)command;
