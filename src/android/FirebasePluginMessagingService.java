@@ -23,6 +23,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
@@ -51,7 +52,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
      */
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-
+        
         prefs = this.getApplicationContext().getSharedPreferences(Constants.SharedPrefs.Notifications,Context.MODE_PRIVATE);
         // [START_EXCLUDE]
         // There are two types of messages data messages and notification messages. Data messages are handled
@@ -79,21 +80,54 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         String id = "";
         String sound = "";
         String lights = "";
-        Map<String, String> data = remoteMessage.getData();
-
+        Map<String, String> dataMap = remoteMessage.getData();
+        Log.d(TAG,dataMap.toString());
+        try{
+          JSONObject data = new JSONObject(dataMap.get("data"));
+          Log.d(TAG,data.toString());
         if (remoteMessage.getNotification() != null) {
             title = remoteMessage.getNotification().getTitle();
             text = remoteMessage.getNotification().getBody();
             id = remoteMessage.getMessageId();
         } else if (data != null) {
-            title = data.get("title");
-            text = data.get("text");
-            id = data.get("id");
-            sound = data.get("sound");
-            lights = data.get("lights"); //String containing hex ARGB color, miliseconds on, miliseconds off, example: '#FFFF00FF,1000,3000'
-
+            title = (data.has("title")) ? data.getString("title"): null;
+            Log.d(TAG,title);
+            text = (data.has("text")) ? data.getString("text") :  new String();
+            id = (data.has("id")) ? data.getString("id") : null;
+            sound = (data.has("sound")) ? data.getString("sound") : null;
+            lights = (data.has("lights")) ? data.getString("lights") : null; //String containing hex ARGB color, miliseconds on, miliseconds off, example: '#FFFF00FF,1000,3000'
             if (TextUtils.isEmpty(text)) {
-                text = data.get("body");
+                text = (data.has("body")) ? data.getString("body") :null;
+            }
+            Log.d(TAG,text);
+            SharedPreferences.Editor editor = prefs.edit();
+            String mcsJsonString = prefs.getString(Constants.SharedPrefs.MCS,null);
+            JSONArray mcs = (mcsJsonString != null) ? new JSONArray(mcsJsonString): new JSONArray();
+            if(data.has("payreq")){
+              //Notificación del mensaje de cobro
+              JSONObject mcPayReq = data.getJSONObject("payreq");
+              JSONObject mc = (mcPayReq.has("infoCif")) ? mcPayReq.getJSONObject("infoCif")
+                : null;
+              boolean previusPayReqSaved = false;
+              if(mc != null){
+                for(int i = 0;i < mcs.length(); i++){
+                  if(mcs.getJSONObject(i).getString("id").equals(mc.getString("id"))){
+                    previusPayReqSaved = true;
+                    break;
+                  }
+                }
+              }
+
+              if(!previusPayReqSaved){
+                mcs.put(mc);
+                Log.d(TAG,mcs.toString());
+                editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
+                editor.apply();
+              }else{
+                Log.d(TAG,"Previamente salvado: " + mcs.toString());
+              }
+            }else if(data.has("info")) {
+              //Estatus del mensaje de cobro
             }
         }
 
@@ -103,42 +137,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             id = Integer.toString(n);
         }
 
-        if(data != null){
-            SharedPreferences.Editor editor = prefs.edit();
-            String mcsJsonString = prefs.getString(Constants.SharedPrefs.MCS,null);
-            try{
-              JSONArray mcs = (mcsJsonString != null) ? new JSONArray(mcsJsonString): new JSONArray();
-              if(data.containsKey("payreq")){
-                //Notificación del mensaje de cobro
-                JSONObject mcPayReq = new JSONObject(data.get("payreq"));
-                JSONObject mc = (mcPayReq.has("infoCif")) ? mcPayReq.getJSONObject("infoCif")
-                  : null;
-                boolean previusPayReqSaved = false;
-                if(mc != null){
-                  for(int i = 0;i < mcs.length(); i++){
-                      if(mcs.getJSONObject(i).getString("id").equals(mc.getString("id"))){
-                        previusPayReqSaved = true;
-                        break;
-                      }
-                  }
-                }
-    
-                if(!previusPayReqSaved){
-                    mcs.put(mc);
-                  Log.d(TAG,mcs.toString());
-                  editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
-                  editor.apply();
-                }else{
-                  Log.d(TAG,"Previamente salvado: " + mcs.toString());
-                }
-              }else if(data.containsKey("info")) {
-                //Estatus del mensaje de cobro
-              }
-            }catch (JSONException ex){
-    
-            }
-    
-          }
 
         Log.d(TAG, "From: " + remoteMessage.getFrom());
         Log.d(TAG, "Notification Message id: " + id);
@@ -146,20 +144,33 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
         Log.d(TAG, "Notification Message Body/Text: " + text);
         Log.d(TAG, "Notification Message Sound: " + sound);
         Log.d(TAG, "Notification Message Lights: " + lights);
-
         // TODO: Add option to developer to configure if show notification when app on foreground
-        if (!TextUtils.isEmpty(text) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
+        if (!TextUtils.isEmpty(text) || !TextUtils.isEmpty(title) || (data != null)) {
+          Log.d(TAG,"eNTRO A ENVIAR NOTIFICACION");
             boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback()) && (!TextUtils.isEmpty(text) || !TextUtils.isEmpty(title));
             sendNotification(id, title, text, data, showNotification, sound, lights);
         }
+        }catch(JSONException e){
+
+        }
     }
 
-    private void sendNotification(String id, String title, String messageBody, Map<String, String> data, boolean showNotification, String sound, String lights) {
+    private void sendNotification(String id, String title, String messageBody, JSONObject data, boolean showNotification, String sound, String lights) {
+      Log.d(TAG,"ENTRO A ENVIAR NOTIFICACION" + data.toString());
         Bundle bundle = new Bundle();
-        for (String key : data.keySet()) {
-            bundle.putString(key, data.get(key));
+        try {
+          Iterator<String> keysIterator = data.keys();
+          while (keysIterator.hasNext()) {
+            String key = keysIterator.next();
+            Log.d(TAG,"key" + key);
+            String value = data.get(key).toString();
+            Log.d(TAG,"value" + value);
+            bundle.putString(key,value);
+          }
+        }catch (Exception ex){
+            Log.d(TAG,ex.getMessage());
         }
-
+      Log.d(TAG,"Envia? "+Boolean.toString(showNotification));
         if (showNotification) {
             Intent intent = new Intent(this, OnNotificationOpenReceiver.class);
             intent.putExtras(bundle);

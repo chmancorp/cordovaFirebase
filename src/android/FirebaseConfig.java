@@ -95,7 +95,7 @@ public class FirebaseConfig {
     {
         Log.d("Msj: ", "configurarFirebaseAppPrivada");
         try {
-            String cGoogleID = "683134177964"; //IDProyectoPrivado
+            String cGoogleID = "172567974334"; //IDProyectoPrivado
             setInitializeAppPrivada(cGoogleID, androidID);
             new TokenPrivada().execute(cGoogleID);
         } catch (Exception e) {
@@ -180,7 +180,7 @@ public class FirebaseConfig {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            FirebasePlugin.returnTokenandKeySource(token);
+            FirebasePlugin.returnToken(token);
             Log.d("*TokenBanxico: " , token + " ");
 
             /*new Handler(Looper.getMainLooper()).post(new Runnable(){
