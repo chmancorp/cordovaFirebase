@@ -1,10 +1,16 @@
 #import "AppDelegate+FirebasePlugin.h"
 #import "FirebasePlugin.h"
 #import "Firebase.h"
+#include <CommonCrypto/CommonDigest.h>
+#include <CommonCrypto/CommonCryptor.h>
 #import <objc/runtime.h>
 
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
 @import UserNotifications;
+
+#define FBENCRYPT_ALGORITHM     kCCAlgorithmAES128
+#define FBENCRYPT_BLOCK_SIZE    kCCBlockSizeAES128
+#define FBENCRYPT_KEY_SIZE      kCCKeySizeAES128
 
 // Implement UNUserNotificationCenterDelegate to receive display notification via APNS for devices
 // running iOS 10 and above. Implement FIRMessagingDelegate to receive data message via FCM for
@@ -44,19 +50,22 @@
     return objc_getAssociatedObject(self, kApplicationInBackgroundKey);
 }
 
-- (BOOL)application:(UIApplication *)application swizzledDidFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    [self application:application swizzledDidFinishLaunchingWithOptions:launchOptions];
-
-    // get GoogleService-Info.plist file path
+- (void)inicializaFirebase:(NSString *)googleId {
+    NSLog(@"Entrando a inicializaFirebase, googleId: %@", googleId);
     NSString *filePath = [[NSBundle mainBundle] pathForResource:@"GoogleService-Info" ofType:@"plist"];
     
-    // if file is successfully found, use it
+    // si lo encuentro, lo uso.
     if(filePath){
         NSLog(@"GoogleService-Info.plist found, setup: [FIRApp configureWithOptions]");
         // create firebase configure options passing .plist as content
-        FIROptions *options = [[FIROptions alloc] initWithContentsOfFile:filePath];
+        //FIROptions *options = [[FIROptions alloc] initWithContentsOfFile:filePath];
+        FIROptions *options = [[FIROptions alloc] initWithGoogleAppID:[NSString stringWithFormat: @"1:%@:ios:d681bfac3039b2ea", googleId]
+                                                          GCMSenderID:googleId];
         
-        // configure FIRApp with options
+        //[options setProjectID:@"201247069219"];
+        //[options setGoogleAppID:@"1:201247069219:ios:d681bfac3039b2ea"];
+        NSLog(@"google app id: %@", [options googleAppID]);
+        
         [FIRApp configureWithOptions:options];
     }
     
@@ -65,17 +74,23 @@
         NSLog(@"GoogleService-Info.plist NOT FOUND, setup: [FIRApp defaultApp]");
         [FIRApp configure];
     }
-
-    // [START set_messaging_delegate]
+    
     [FIRMessaging messaging].delegate = self;
-    // [END set_messaging_delegate]
+
 #if defined(__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
     self.delegate = [UNUserNotificationCenter currentNotificationCenter].delegate;
-        [UNUserNotificationCenter currentNotificationCenter].delegate = self;
+    [UNUserNotificationCenter currentNotificationCenter].delegate = self;
 #endif
-
+    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(tokenRefreshNotification:)
                                                  name:kFIRInstanceIDTokenRefreshNotification object:nil];
+}
+
+- (BOOL)application:(UIApplication *)application swizzledDidFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    [self application:application swizzledDidFinishLaunchingWithOptions:launchOptions];
+
+    [FirebasePlugin registraApp:self];
+    //[self inicializaFirebase];
 
     self.applicationInBackground = @(YES);
 
@@ -85,12 +100,26 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     [self connectToFcm];
     self.applicationInBackground = @(NO);
+    NSLog(@"Aplicacion activa, UUID:");
+    NSString *uniqueIdentifier = [[[UIDevice currentDevice] identifierForVendor] UUIDString];
+    NSLog(uniqueIdentifier);
     }
 
 - (void)applicationDidEnterBackground:(UIApplication *)application {
     [[FIRMessaging messaging] disconnect];
     self.applicationInBackground = @(YES);
     NSLog(@"Disconnected from FCM");
+}
+
+- (void)messaging:(FIRMessaging *)messaging didReceiveRegistrationToken:(NSString *)fcmToken {
+    NSLog(@"FCM registration token: %@", fcmToken);
+    // Notify about received token.
+    NSDictionary *dataDict = [NSDictionary dictionaryWithObject:fcmToken forKey:@"token"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:
+     @"FCMToken" object:nil userInfo:dataDict];
+    
+    // Notifico a Ionic
+    [[FirebasePlugin firebasePlugin] echoResult:fcmToken];
 }
 
 - (void)tokenRefreshNotification:(NSNotification *)notification {
@@ -103,6 +132,7 @@
     // Connect to FCM since connection may have failed when attempted before having a token.
     [self connectToFcm];
     [FirebasePlugin.firebasePlugin sendToken:refreshedToken];
+    
 }
 
 - (void)connectToFcm {
@@ -113,6 +143,10 @@
             NSLog(@"Connected to FCM.");
             NSString *refreshedToken = [[FIRInstanceID instanceID] token];
             NSLog(@"InstanceID token: %@", refreshedToken);
+            
+            NSLog(@"Version firebase: %ld",(long)[FirebasePlugin version]);
+            NSLog(@"FIRApp Version: %ld", (long)[FIRApp version]);
+
         }
     }];
 }
