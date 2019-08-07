@@ -106,9 +106,9 @@ public class FirebasePlugin extends CordovaPlugin {
             String idh = args.getString(1);
             String phone = args.getString(2);
             String gId = args.getString(3);
-            this.keySource = firebaseConfig.getKeySource(codr,idh,phone);
-            String gIdDecrypted = firebaseConfig.decrypGId(keySource.substring(0,32),keySource.substring(32,64),gId);
-            firebaseConfig.generateIdN(gIdDecrypted);      
+            /*this.keySource = firebaseConfig.getKeySource(codr,idh,phone);
+            String gIdDecrypted = firebaseConfig.decrypGId(keySource.substring(0,32),keySource.substring(32,64),gId);*/
+            firebaseConfig.generateIdN(gId);
             //firebaseConfig.generateIdN(codr, idh, phone, gId, callbackContext);
             
       
@@ -273,12 +273,7 @@ public class FirebasePlugin extends CordovaPlugin {
           getSharedPreferences(Constants.SharedPrefs.Notifications,Context.MODE_PRIVATE);
         String mcJsonString = pref.getString(Constants.SharedPrefs.MCS,null);
         try {
-          if(mcJsonString != null){
-            callbackContext.success(new JSONArray(mcJsonString));
-          }else{
-            callbackContext.success(new JSONArray());
-          }
-
+          callbackContext.success(new JSONArray(mcJsonString));
         }catch (Exception ex){
           callbackContext.error("Hubo un error al querer obtener los mensajes de cobro");
         }
@@ -1019,14 +1014,13 @@ public class FirebasePlugin extends CordovaPlugin {
         });
     }
 
-    public void returnTokenandKeySource(String token){
+    public void returnToken(String token){
         JSONObject data = new JSONObject();
         try {
             data.put("token", token);
-            data.put("keySource", this.keySource);
         }catch (JSONException ex){
     
         }
-        this.callbackContext.success(data.toString());
+        this.callbackContext.success(data);
     }
 }
