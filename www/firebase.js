@@ -1,3 +1,4 @@
+cordova.define("cordova-plugin-firebase.FirebasePlugin", function(require, exports, module) {
 var exec = require('cordova/exec');
 
 exports.echo = function(codr,idh,phone,gId, cb,error){
@@ -26,6 +27,10 @@ exports.onNotificationOpen = function (success, error) {
 
 exports.getMCSaved = function (success, error) {
   exec(success, error, "FirebasePlugin", "getMCSaved", []);
+};
+
+exports.getAllNotifications = function (success, error) {
+  exec(success, error, "FirebasePlugin", "getAllNotifications", []);
 };
 
 exports.onTokenRefresh = function (success, error) {
@@ -175,3 +180,4 @@ exports.verifyPhoneNumber = function (number, timeOutDuration, success, error) {
 exports.clearAllNotifications = function (success, error) {
   exec(success, error, "FirebasePlugin", "clearAllNotifications", []);
 };
+});

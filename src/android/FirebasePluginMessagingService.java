@@ -100,6 +100,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 text = (data.has("body")) ? data.getString("body") :null;
             }
             Log.d(TAG,text);
+            //Save all mc...
             SharedPreferences.Editor editor = prefs.edit();
             String mcsJsonString = prefs.getString(Constants.SharedPrefs.MCS,null);
             JSONArray mcs = (mcsJsonString != null) ? new JSONArray(mcsJsonString): new JSONArray();
@@ -119,6 +120,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
               }
 
               if(!previusPayReqSaved){
+                mc.put("isPayReq", true);
                 mcs.put(mc);
                 Log.d(TAG,mcs.toString());
                 editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
@@ -128,7 +130,39 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
               }
             }else if(data.has("info")) {
               //Estatus del mensaje de cobro
+              JSONObject mcPayReq = data.getJSONObject("payreq");
+              JSONObject mc = (mcPayReq.has("infoCif")) ? mcPayReq.getJSONObject("infoCif")
+                : null;
+              boolean previusPayReqSaved = false;
+                if(mc != null){
+                  for(int i = 0;i < mcs.length(); i++){
+                    if(mcs.getJSONObject(i).getString("id").equals(mc.getString("id"))){
+                      mc.put("isPayReq", false);
+                      mcs.put(i, mc);
+                      Log.d(TAG, mcs.toString());
+                      editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
+                      editor.apply();
+                      previusPayReqSaved = true;
+                      break;
+                    }
+                  }
+                  if(!previusPayReqSaved){
+                    mc.put("isPayReq", false);
+                    mcs.put(mc);
+                    Log.d(TAG,mcs.toString());
+                    editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
+                    editor.apply();
+                  }
+                }
             }
+          //Save all notifications...
+          editor = prefs.edit();
+          String notificationsJsonString = prefs.getString(Constants.SharedPrefs.AllNotifications,null);
+          JSONArray all_notifications = (notificationsJsonString != null) ? new JSONArray(notificationsJsonString): new JSONArray();
+          all_notifications.put(data);
+          Log.d(TAG,all_notifications.toString());
+          editor.putString(Constants.SharedPrefs.AllNotifications,all_notifications.toString());
+          editor.apply();
         }
 
         if (TextUtils.isEmpty(id)) {
