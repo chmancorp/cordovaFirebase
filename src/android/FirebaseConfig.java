@@ -25,6 +25,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.crypto.BadPaddingException;
@@ -120,10 +121,10 @@ public class FirebaseConfig {
         Log.d("Privada: ", "cGoogleID: " + cGoogleID + " androidID:" + androidID);
         FirebaseOptions.Builder builder = new FirebaseOptions.Builder()
                 .setApplicationId("1:"+ cGoogleID +":android:" + androidID);
-        List<FirebaseApp> firebaseApps = FirebaseApp.getApps(activity);
+        List<FirebaseApp> firebaseApps = new ArrayList<FirebaseApp>(FirebaseApp.getApps(activity));
         for (FirebaseApp app: firebaseApps) {
             if (app.getName().equals("privada")){
-               // app.delete();
+               return;
 
             }
         }
@@ -136,13 +137,12 @@ public class FirebaseConfig {
         Log.d("Banxico: ", "cGoogleID: " + cGoogleID + " androidID:" + androidID);
         FirebaseOptions.Builder builder = new FirebaseOptions.Builder()
                 .setApplicationId("1:"+ cGoogleID +":android:" + androidID);
-        List<FirebaseApp> firebaseApps = FirebaseApp.getApps(activity);
+        List<FirebaseApp> firebaseApps = new ArrayList<FirebaseApp>(FirebaseApp.getApps(activity));
         for (FirebaseApp app: firebaseApps) {
             if (app.getName().equals("banxico")){
-               // app.delete();
+               return;
 
             }
-                //app.delete();
         }
         myApp = FirebaseApp.initializeApp(activity, builder.build(), "banxico");
         Log.d("Msj: ", "configurado:" + myApp.getName());

@@ -23,6 +23,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.sql.Timestamp;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
@@ -157,6 +158,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             }
           //Save all notifications...
           editor = prefs.edit();
+          long currentTime =  System.currentTimeMillis();
+          data.put("hnr",currentTime);
           String notificationsJsonString = prefs.getString(Constants.SharedPrefs.AllNotifications,null);
           JSONArray all_notifications = (notificationsJsonString != null) ? new JSONArray(notificationsJsonString): new JSONArray();
           all_notifications.put(data);
