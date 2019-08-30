@@ -130,8 +130,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 Log.d(TAG,"Previamente salvado: " + mcs.toString());
               }
             }else if(data.has("info")) {
+              Log.d(TAG,"Actualización de status");
               //Estatus del mensaje de cobro
-              JSONObject mcPayReq = data.getJSONObject("payreq");
+              JSONObject mcPayReq = data.getJSONObject("info");
               JSONObject mc = (mcPayReq.has("infoCif")) ? mcPayReq.getJSONObject("infoCif")
                 : null;
               boolean previusPayReqSaved = false;
@@ -140,6 +141,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                     if(mcs.getJSONObject(i).getString("id").equals(mc.getString("id"))){
                       mc.put("isPayReq", false);
                       mcs.put(i, mc);
+                      Log.d(TAG,"msg previous saved!");
                       Log.d(TAG, mcs.toString());
                       editor.putString(Constants.SharedPrefs.MCS,mcs.toString());
                       editor.apply();
