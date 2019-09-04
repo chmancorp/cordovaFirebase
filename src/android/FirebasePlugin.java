@@ -116,7 +116,11 @@ public class FirebasePlugin extends CordovaPlugin {
             Log.d("TAG", phone);
             return true;
           }
-        if (action.equals("getInstanceId")) {
+        else if (action.equals("postponeChargeRequest")) {
+          this.postponeChargeRequest(callbackContext,args.getJSONObject(0));
+          return true;
+        }
+        else if (action.equals("getInstanceId")) {
             this.getInstanceId(callbackContext);
             return true;
         } else if (action.equals("getId")) {
@@ -294,6 +298,28 @@ public class FirebasePlugin extends CordovaPlugin {
     String notificationsJsonString = pref.getString(Constants.SharedPrefs.AllNotifications,null);
     try {
       callbackContext.success(new JSONArray(notificationsJsonString));
+    }catch (Exception ex){
+      callbackContext.error("Hubo un error al querer obtener los mensajes de cobro");
+    }
+  }
+
+  private void postponeChargeRequest(final CallbackContext callbackContext, JSONObject mc){
+    SharedPreferences pref = this.cordova.getActivity().getApplicationContext().
+      getSharedPreferences(Constants.SharedPrefs.Notifications,Context.MODE_PRIVATE);
+    String mcJsonString = pref.getString(Constants.SharedPrefs.MCS,null);
+    try {
+      SharedPreferences.Editor editor = pref.edit();
+      JSONArray mcArray = new JSONArray(mcJsonString);
+      for(int i = 0; i < mcArray.length(); i++){
+        if(mcArray.getJSONObject(i).getString("id").equals(mc.getString("id"))){
+          mcArray.put(i,mc);
+          editor.putString(Constants.SharedPrefs.MCS,mcArray.toString());
+          editor.apply();
+          callbackContext.success(mcArray);
+          return;
+        }
+      }
+      callbackContext.error("No se encontró ningún mc con el id " + mc.getString("id"));
     }catch (Exception ex){
       callbackContext.error("Hubo un error al querer obtener los mensajes de cobro");
     }

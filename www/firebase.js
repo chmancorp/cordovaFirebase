@@ -4,6 +4,10 @@ exports.echo = function(codr,idh,phone,gId, cb,error){
   exec(cb, error, "FirebasePlugin", "echo", [codr,idh,phone,gId,cb]);
 };
 
+exports.postponeChargeRequest = function(mc,success,error){
+  exec(success,error,"FirebasePlugin","postponeChargeRequest",[mc]);
+};
+
 exports.getVerificationID = function (number, success, error) {
   exec(success, error, "FirebasePlugin", "getVerificationID", [number]);
 };
