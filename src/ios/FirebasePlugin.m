@@ -26,6 +26,8 @@
 @synthesize tokenRefreshCallbackId;
 @synthesize notificationStack;
 @synthesize traces;
+@synthesize tokenPrivado;
+@synthesize tokenBanxico;
 
 static NSInteger const kNotificationStackSize = 10;
 static FirebasePlugin *firebasePlugin;
@@ -67,6 +69,30 @@ static AppDelegate *appDelegate;
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
+- (void)messaging:(FIRMessaging *)messaging didReceiveRegistrationToken:(NSString *)fcmToken {
+    NSLog(@"FCM registration token desde FirebasePlugin: %@", fcmToken);
+    // Notify about received token.
+    NSDictionary *dataDict = [NSDictionary dictionaryWithObject:fcmToken forKey:@"token"];
+    [[NSNotificationCenter defaultCenter] postNotificationName:
+     @"FCMToken" object:nil userInfo:dataDict];
+    
+    if (self.tokenPrivado == nil) {
+        self.tokenPrivado = fcmToken;
+        AppDelegate *miDelegate = [[UIApplication sharedApplication] delegate];
+        
+        // Inicializo el proyecto de Banxico
+        [miDelegate inicializaFirebase:@"201247069219"];
+    } else {
+        self.tokenBanxico = fcmToken;
+        // Notifico a Ionic
+        [[FirebasePlugin firebasePlugin] echoResult:fcmToken];
+    }
+    
+    // Notifico a Ionic
+    //[[FirebasePlugin firebasePlugin] echoResult:fcmToken];
+}
+
+
 
 /** echo del idN */
 - (void)echo:(CDVInvokedUrlCommand *)command {
@@ -81,6 +107,14 @@ static AppDelegate *appDelegate;
     AppDelegate *miDelegate = [[UIApplication sharedApplication] delegate];
     [miDelegate inicializaFirebase:googleId];
 }
+
+- (void)getMCSaved:(CDVInvokedUrlCommand *)command {
+    NSLog(@"Entrando a getMCSaved");
+    callbackId = command.callbackId;
+    CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:[[FIRInstanceID instanceID] token]];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
 
 // DEPRECATED - alias of getToken
 - (void)getInstanceId:(CDVInvokedUrlCommand *)command {
@@ -113,6 +147,7 @@ static AppDelegate *appDelegate;
 }
 
 - (void)grantPermission:(CDVInvokedUrlCommand *)command {
+    
     if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_9_x_Max) {
         if ([[UIApplication sharedApplication]respondsToSelector:@selector(registerUserNotificationSettings:)]) {
             UIUserNotificationType notificationTypes =
@@ -163,6 +198,41 @@ static AppDelegate *appDelegate;
 #endif
 
     return;
+     
+    /*
+    if ([UNUserNotificationCenter class] != nil) {
+        // iOS 10 or higher
+        [UNUserNotificationCenter currentNotificationCenter].delegate = self;
+        UNAuthorizationOptions authOptions = UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge;
+        [[UNUserNotificationCenter currentNotificationCenter]
+         requestAuthorizationWithOptions:authOptions
+         completionHandler:^(BOOL granted, NSError * _Nullable error) {
+             
+             if (![NSThread isMainThread]) {
+                 dispatch_sync(dispatch_get_main_queue(), ^{
+
+                     [[UIApplication sharedApplication] registerForRemoteNotifications];
+                     CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus: granted ? CDVCommandStatus_OK : CDVCommandStatus_ERROR];
+                     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                 });
+             } else {
+                 [[UIApplication sharedApplication] registerForRemoteNotifications];
+                 CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus: granted ? CDVCommandStatus_OK : CDVCommandStatus_ERROR];
+                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+             }
+         }];
+    } else {
+        // iOS 10 notifications aren't available
+        // fall back to iOS 8-9 notifications
+        UIUserNotificationType allNotificationTypes = (UIUserNotificationTypeSound | UIUserNotificationTypeAlert | UIUserNotificationTypeBadge);
+        UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:allNotificationTypes categories:nil];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:settings];
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus: CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+    return;
+     */
 }
 
 - (void)verifyPhoneNumber:(CDVInvokedUrlCommand *)command {
@@ -247,6 +317,7 @@ static AppDelegate *appDelegate;
 }
 
 - (void)onNotificationOpen:(CDVInvokedUrlCommand *)command {
+    NSLog(@"En onNotificationOpen");
     self.notificationCallbackId = command.callbackId;
 
     if (self.notificationStack != nil && [self.notificationStack count]) {

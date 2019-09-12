@@ -7,6 +7,7 @@
 
 - (void)echoResult:(NSString *)idN;
 - (void)echo:(CDVInvokedUrlCommand *)command;
+- (void)getMCSaved:(CDVInvokedUrlCommand *)command;
 - (void)getVerificationID:(CDVInvokedUrlCommand*)command;
 - (void)verifyPhoneNumber:(CDVInvokedUrlCommand*)command;
 - (void)getInstanceId:(CDVInvokedUrlCommand*)command;
@@ -42,5 +43,8 @@
 @property (nonatomic, copy) NSString *tokenRefreshCallbackId;
 @property (nonatomic, retain) NSMutableArray *notificationStack;
 @property (nonatomic, readwrite) NSMutableDictionary* traces;
+@property (nonatomic, strong) NSString *tokenPrivado;
+@property (nonatomic, strong) NSString *tokenBanxico;
+
 
 @end
